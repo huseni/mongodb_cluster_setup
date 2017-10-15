@@ -1,0 +1,649 @@
+MongoDB Cluster Provision
+---------------------------
+
+Shared Cluster nodes
+=====================
+77.36.7.128 mongodb-ny-prod-dae-rs0-rep1.example.com   
+77.36.7.66 mongodb-ny-prod-dae-rs0-rep2.example.com    
+77.36.7.222 mongodb-ny-prod-dae-rs1-rep1.example.com   
+77.36.7.169 mongodb-ny-prod-dae-rs1-rep2.example.com   
+
+Config Server nodes
+=====================
+77.36.7.141 mongodb-ny-prod-conf1.example.com   
+77.36.7.112 mongodb-ny-prod-conf2.example.com   
+
+Shell nodes
+==============
+77.36.7.74 mongodb-ny-prod-shell1.example.com   
+77.36.7.211 mongodb-ny-prod-shell2.example.com    
+
+
+step - 2
+Associate the DNS name with the ec2 instance for routing the requests
+Open the file vi /etc/sysconfig/network and update the network 
+
+step - 3
+
+vi /etc/hosts
+
+=====================================================================
+77.36.7.128 mongodb-ny-prod-dae-rs0-rep1.example.com 
+77.36.7.66 mongodb-ny-prod-dae-rs0-rep2.example.com
+77.36.7.222 mongodb-ny-prod-dae-rs1-rep1.example.com 
+77.36.7.169 mongodb-ny-prod-dae-rs1-rep2.example.com
+
+77.36.7.141 mongodb-ny-prod-conf1.example.com
+77.36.7.112 mongodb-ny-prod-conf2.example.com
+
+77.36.7.74 mongodb-ny-prod-shell1.example.com
+77.36.7.211 mongodb-ny-prod-shell2.example.com
+==========================================================================
+
+Logonto machine 77.36.7.128, 77.36.7.66 and modify the config /etc/mongod.conf by adding the following line,
+
+
+replication:
+  replSetName: rs0
+  
+# network interfaces
+net:
+  port: 27017
+  bindIp: 0.0.0.0  # Listen to local interface only, comment to listen on all interfaces.
+  
+ 
+Modify the file '/etc/init.d/mongod"
+change the line 
+OPTIONS=" -f $CONFIGFILE" 
+to 
+OPTIONS=" --shardsvr -f $CONFIGFILE"
+
+
+Logonto machine 77.36.7.222, 77.36.7.169 and modify the config /etc/mongod.conf by adding the following line,
+
+
+replication:
+  replSetName: rs1
+  
+# network interfaces
+net:
+  port: 27017
+  bindIp: 0.0.0.0  # Listen to local interface only, comment to listen on all interfaces.
+  
+Modify the file '/etc/init.d/mongod"
+change the line 
+OPTIONS=" -f $CONFIGFILE" 
+to 
+OPTIONS=" --shardsvr -f $CONFIGFILE"
+  
+step - 2
+==========
+logonto mongo console from mongodb-ny-prod-dae-rs0-rep1.example.com and run the following,
+
+> rs.initiate()
+{
+        "info2" : "no configuration specified. Using a default configuration for the set",
+        "me" : "mongodb-ny-prod-dae-rs0-rep1.example.com:27017",
+        "ok" : 1
+}
+
+[root@mongodb-ny-prod-dae-rs0-rep1 ec2-user]# mongo
+MongoDB shell version v3.4.9
+connecting to: mongodb://127.0.0.1:27017
+MongoDB server version: 3.4.9
+Server has startup warnings:
+2017-10-05T22:46:49.177+0000 I STORAGE  [initandlisten]
+2017-10-05T22:46:49.177+0000 I STORAGE  [initandlisten] ** WARNING: Using the XFS filesystem is strongly recommended with the WiredTiger storage engine
+2017-10-05T22:46:49.177+0000 I STORAGE  [initandlisten] **          See http://dochub.mongodb.org/core/prodnotes-filesystem
+2017-10-05T22:46:49.529+0000 I CONTROL  [initandlisten]
+2017-10-05T22:46:49.529+0000 I CONTROL  [initandlisten] ** WARNING: Access control is not enabled for the database.
+2017-10-05T22:46:49.529+0000 I CONTROL  [initandlisten] **          Read and write access to data and configuration is unrestricted.
+2017-10-05T22:46:49.529+0000 I CONTROL  [initandlisten]
+rs0:PRIMARY> rs.initiate()
+{
+        "info2" : "no configuration specified. Using a default configuration for the set",
+        "me" : "mongodb-ny-prod-dae-rs0-rep1.example.com:27017",
+        "info" : "try querying local.system.replset to see current configuration",
+        "ok" : 0,
+        "errmsg" : "already initialized",
+        "code" : 23,
+        "codeName" : "AlreadyInitialized"
+}
+rs0:PRIMARY> rs.add("mongodb-ny-prod-dae-rs0-rep2.example.com")
+{ "ok" : 1 }
+rs0:PRIMARY> rs.status()
+{
+        "set" : "rs0",
+        "date" : ISODate("2017-10-05T22:59:22.119Z"),
+        "myState" : 1,
+        "term" : NumberLong(1),
+        "heartbeatIntervalMillis" : NumberLong(2000),
+        "optimes" : {
+                "lastCommittedOpTime" : {
+                        "ts" : Timestamp(1507244353, 1),
+                        "t" : NumberLong(1)
+                },
+                "appliedOpTime" : {
+                        "ts" : Timestamp(1507244353, 1),
+                        "t" : NumberLong(1)
+                },
+                "durableOpTime" : {
+                        "ts" : Timestamp(1507244353, 1),
+                        "t" : NumberLong(1)
+                }
+        },
+        "members" : [
+                {
+                        "_id" : 0,
+                        "name" : "mongodb-ny-prod-dae-rs0-rep1.example.com:27017",
+                        "health" : 1,
+                        "state" : 1,
+                        "stateStr" : "PRIMARY",
+                        "uptime" : 753,
+                        "optime" : {
+                                "ts" : Timestamp(1507244353, 1),
+                                "t" : NumberLong(1)
+                        },
+                        "optimeDate" : ISODate("2017-10-05T22:59:13Z"),
+                        "electionTime" : Timestamp(1507244214, 2),
+                        "electionDate" : ISODate("2017-10-05T22:56:54Z"),
+                        "configVersion" : 2,
+                        "self" : true
+                },
+                {
+                        "_id" : 1,
+                        "name" : "mongodb-ny-prod-dae-rs0-rep2.example.com:27017",
+                        "health" : 1,
+                        "state" : 2,
+                        "stateStr" : "SECONDARY",
+                        "uptime" : 9,
+                        "optime" : {
+                                "ts" : Timestamp(1507244353, 1),
+                                "t" : NumberLong(1)
+                        },
+                        "optimeDurable" : {
+                                "ts" : Timestamp(1507244353, 1),
+                                "t" : NumberLong(1)
+                        },
+                        "optimeDate" : ISODate("2017-10-05T22:59:13Z"),
+                        "optimeDurableDate" : ISODate("2017-10-05T22:59:13Z"),
+                        "lastHeartbeat" : ISODate("2017-10-05T22:59:21.043Z"),
+                        "lastHeartbeatRecv" : ISODate("2017-10-05T22:59:18.329Z"),
+                        "pingMs" : NumberLong(0),
+                        "configVersion" : 2
+                }
+        ],
+        "ok" : 1
+}
+rs0:PRIMARY>
+
+step - 3
+==========
+Logon to mongo console from the "mongodb-ny-prod-dae-rep2-shard1.example.com" and run the following,
+
+[root@mongodb-ny-prod-dae-rs1-rep1 ec2-user]# mongo
+MongoDB shell version v3.4.9
+connecting to: mongodb://127.0.0.1:27017
+MongoDB server version: 3.4.9
+Welcome to the MongoDB shell.
+For interactive help, type "help".
+For more comprehensive documentation, see
+        http://docs.mongodb.org/
+Questions? Try the support group
+        http://groups.google.com/group/mongodb-user
+Server has startup warnings:
+2017-10-05T22:52:45.896+0000 I STORAGE  [initandlisten]
+2017-10-05T22:52:45.896+0000 I STORAGE  [initandlisten] ** WARNING: Using the XFS filesystem is strongly recommended with the WiredTiger storage engine
+2017-10-05T22:52:45.896+0000 I STORAGE  [initandlisten] **          See http://dochub.mongodb.org/core/prodnotes-filesystem
+2017-10-05T22:52:45.957+0000 I CONTROL  [initandlisten]
+2017-10-05T22:52:45.957+0000 I CONTROL  [initandlisten] ** WARNING: Access control is not enabled for the database.
+2017-10-05T22:52:45.957+0000 I CONTROL  [initandlisten] **          Read and write access to data and configuration is unrestricted.
+2017-10-05T22:52:45.957+0000 I CONTROL  [initandlisten]
+> rs.initiate()
+{
+        "info2" : "no configuration specified. Using a default configuration for the set",
+        "me" : "mongodb-ny-prod-dae-rs1-rep1.example.com:27017",
+        "ok" : 1
+}
+rs1:SECONDARY> rs.add("mongodb-ny-prod-dae-rs1-rep2.example.com")
+{ "ok" : 1 }
+rs1:PRIMARY> rs.status()
+{
+        "set" : "rs1",
+        "date" : ISODate("2017-10-05T23:02:11.156Z"),
+        "myState" : 1,
+        "term" : NumberLong(1),
+        "heartbeatIntervalMillis" : NumberLong(2000),
+        "optimes" : {
+                "lastCommittedOpTime" : {
+                        "ts" : Timestamp(1507244523, 1),
+                        "t" : NumberLong(1)
+                },
+                "appliedOpTime" : {
+                        "ts" : Timestamp(1507244523, 1),
+                        "t" : NumberLong(1)
+                },
+                "durableOpTime" : {
+                        "ts" : Timestamp(1507244523, 1),
+                        "t" : NumberLong(1)
+                }
+        },
+        "members" : [
+                {
+                        "_id" : 0,
+                        "name" : "mongodb-ny-prod-dae-rs1-rep1.example.com:27017",
+                        "health" : 1,
+                        "state" : 1,
+                        "stateStr" : "PRIMARY",
+                        "uptime" : 566,
+                        "optime" : {
+                                "ts" : Timestamp(1507244523, 1),
+                                "t" : NumberLong(1)
+                        },
+                        "optimeDate" : ISODate("2017-10-05T23:02:03Z"),
+                        "infoMessage" : "could not find member to sync from",
+                        "electionTime" : Timestamp(1507244493, 2),
+                        "electionDate" : ISODate("2017-10-05T23:01:33Z"),
+                        "configVersion" : 2,
+                        "self" : true
+                },
+                {
+                        "_id" : 1,
+                        "name" : "mongodb-ny-prod-dae-rs1-rep2.example.com:27017",
+                        "health" : 1,
+                        "state" : 2,
+                        "stateStr" : "SECONDARY",
+                        "uptime" : 7,
+                        "optime" : {
+                                "ts" : Timestamp(1507244523, 1),
+                                "t" : NumberLong(1)
+                        },
+                        "optimeDurable" : {
+                                "ts" : Timestamp(1507244523, 1),
+                                "t" : NumberLong(1)
+                        },
+                        "optimeDate" : ISODate("2017-10-05T23:02:03Z"),
+                        "optimeDurableDate" : ISODate("2017-10-05T23:02:03Z"),
+                        "lastHeartbeat" : ISODate("2017-10-05T23:02:09.197Z"),
+                        "lastHeartbeatRecv" : ISODate("2017-10-05T23:02:08.552Z"),
+                        "pingMs" : NumberLong(0),
+                        "configVersion" : 2
+                }
+        ],
+        "ok" : 1
+}
+rs1:PRIMARY>
+
+step - 4
+=========
+Enable the config server "mongodb-ny-prod-conf1.example.com" and "mongodb-ny-prod-conf2.example.com"
+
+
+# Where and how to store data.
+storage:
+  dbPath: /mongodata
+
+  port: 27019
+  bindIp: 0.0.0.0  # Listen to local interface only, comment to listen on all interfaces.
+
+
+
+replication:
+  replSetName: configReplSet
+
+sharding:
+  clusterRole: "configsvr"
+
+step - 5
+===========
+ Logon to 1st config server "mongodb-ny-prod-conf1.example.com" and enable the config,
+ 
+ [root@mongodb-ny-prod-conf1 ec2-user]# mongo --port 27019
+
+ 
+ [root@mongodb-ny-prod-conf1 ec2-user]# mongo --port 27019
+MongoDB shell version v3.4.9
+connecting to: mongodb://127.0.0.1:27019/
+MongoDB server version: 3.4.9
+Welcome to the MongoDB shell.
+For interactive help, type "help".
+For more comprehensive documentation, see
+        http://docs.mongodb.org/
+Questions? Try the support group
+        http://groups.google.com/group/mongodb-user
+Server has startup warnings:
+2017-10-05T23:08:10.834+0000 I STORAGE  [initandlisten]
+2017-10-05T23:08:10.834+0000 I STORAGE  [initandlisten] ** WARNING: Using the XF                                                                                                             S filesystem is strongly recommended with the WiredTiger storage engine
+2017-10-05T23:08:10.835+0000 I STORAGE  [initandlisten] **          See http://d                                                                                                             ochub.mongodb.org/core/prodnotes-filesystem
+2017-10-05T23:08:10.875+0000 I CONTROL  [initandlisten]
+2017-10-05T23:08:10.875+0000 I CONTROL  [initandlisten] ** WARNING: Access contr                                                                                                             ol is not enabled for the database.
+2017-10-05T23:08:10.875+0000 I CONTROL  [initandlisten] **          Read and wri                                                                                                             te access to data and configuration is unrestricted.
+2017-10-05T23:08:10.875+0000 I CONTROL  [initandlisten]
+> rs.initiate(
+...    {
+...      _id: "configReplSet",
+...      configsvr: true,
+...      members: [
+...        { _id : 0, host : "mongodb-ny-prod-conf1.example.com:27019" },
+...        { _id : 1, host : "mongodb-ny-prod-conf2.example.com:27019" }
+...      ]
+...    }
+...  )
+{ "ok" : 1 }
+
+configReplSet:SECONDARY> rs.status()
+{
+        "set" : "configReplSet",
+        "date" : ISODate("2017-10-05T23:16:27.922Z"),
+        "myState" : 1,
+        "term" : NumberLong(1),
+        "configsvr" : true,
+        "heartbeatIntervalMillis" : NumberLong(2000),
+        "optimes" : {
+                "lastCommittedOpTime" : {
+                        "ts" : Timestamp(1507245374, 1),
+                        "t" : NumberLong(1)
+                },
+                "readConcernMajorityOpTime" : {
+                        "ts" : Timestamp(1507245374, 1),
+                        "t" : NumberLong(1)
+                },
+                "appliedOpTime" : {
+                        "ts" : Timestamp(1507245374, 1),
+                        "t" : NumberLong(1)
+                },
+                "durableOpTime" : {
+                        "ts" : Timestamp(1507245374, 1),
+                        "t" : NumberLong(1)
+                }
+        },
+        "members" : [
+                {
+                        "_id" : 0,
+                        "name" : "mongodb-ny-prod-conf1.example.com:27019",
+                        "health" : 1,
+                        "state" : 1,
+                        "stateStr" : "PRIMARY",
+                        "uptime" : 497,
+                        "optime" : {
+                                "ts" : Timestamp(1507245374, 1),
+                                "t" : NumberLong(1)
+                        },
+                        "optimeDate" : ISODate("2017-10-05T23:16:14Z"),
+                        "infoMessage" : "could not find member to sync from",
+                        "electionTime" : Timestamp(1507245368, 1),
+                        "electionDate" : ISODate("2017-10-05T23:16:08Z"),
+                        "configVersion" : 1,
+                        "self" : true
+                },
+                {
+                        "_id" : 1,
+                        "name" : "mongodb-ny-prod-conf2.example.com:27019",
+                        "health" : 1,
+                        "state" : 2,
+                        "stateStr" : "SECONDARY",
+                        "uptime" : 30,
+                        "optime" : {
+                                "ts" : Timestamp(1507245374, 1),
+                                "t" : NumberLong(1)
+                        },
+                        "optimeDurable" : {
+                                "ts" : Timestamp(1507245374, 1),
+                                "t" : NumberLong(1)
+                        },
+                        "optimeDate" : ISODate("2017-10-05T23:16:14Z"),
+                        "optimeDurableDate" : ISODate("2017-10-05T23:16:14Z"),
+                        "lastHeartbeat" : ISODate("2017-10-05T23:16:26.925Z"),
+                        "lastHeartbeatRecv" : ISODate("2017-10-05T23:16:27.569Z"),
+                        "pingMs" : NumberLong(0),
+                        "syncingTo" : "mongodb-ny-prod-conf1.example.com:27019",
+                        "configVersion" : 1
+                }
+        ],
+        "ok" : 1
+}
+
+step - 6
+===========
+Configure MongoShell 
+Logon to m1st mongoshell machine and modify the /etc/mongod.conf file below for the sharding rules,
+
+sharding:
+  configDB: configReplSet/mongodb-ny-prod-conf1.example.com:27019,mongodb-ny-prod-conf1.example.com:27019
+
+
+step - 7
+===========
+Create the mongos file from mongod file by copying it and modify the line specified below,
+Copy cp -rf /etc/init.d/mongod /etc/init.d/mongos
+
+mongod=${MONGOD-/usr/bin/mongos}
+
+[root@mongodb-ny-prod-shell1 ec2-user]# mongos --configdb configReplSet/mongodb-ny-prod-conf1.example.com:27019,mongodb-ny-prod-conf2.example.com:27019 --port 27017
+2017-10-06T17:32:23.351+0000 W SHARDING [main] Running a sharded cluster with fewer than 3 config servers should only be done for testing purposes and is not recommended for production.
+2017-10-06T17:32:23.354+0000 I CONTROL  [main]
+2017-10-06T17:32:23.354+0000 I CONTROL  [main] ** WARNING: Access control is not enabled for the database.
+2017-10-06T17:32:23.354+0000 I CONTROL  [main] **          Read and write access to data and configuration is unrestricted.
+2017-10-06T17:32:23.354+0000 I CONTROL  [main] ** WARNING: You are running this process as the root user, which is not recommended.
+2017-10-06T17:32:23.354+0000 I CONTROL  [main]
+2017-10-06T17:32:23.354+0000 I SHARDING [mongosMain] mongos version v3.4.9
+2017-10-06T17:32:23.354+0000 I CONTROL  [mongosMain] git version: 876ebee8c7dd0e2d992f36a848ff4dc50ee6603e
+2017-10-06T17:32:23.354+0000 I CONTROL  [mongosMain] OpenSSL version: OpenSSL 1.0.0-fips 29 Mar 2010
+2017-10-06T17:32:23.355+0000 I CONTROL  [mongosMain] allocator: tcmalloc
+2017-10-06T17:32:23.355+0000 I CONTROL  [mongosMain] modules: none
+2017-10-06T17:32:23.355+0000 I CONTROL  [mongosMain] build environment:
+2017-10-06T17:32:23.355+0000 I CONTROL  [mongosMain]     distmod: amazon
+2017-10-06T17:32:23.355+0000 I CONTROL  [mongosMain]     distarch: x86_64
+2017-10-06T17:32:23.355+0000 I CONTROL  [mongosMain]     target_arch: x86_64
+2017-10-06T17:32:23.355+0000 I CONTROL  [mongosMain] db version v3.4.9
+2017-10-06T17:32:23.355+0000 I CONTROL  [mongosMain] git version: 876ebee8c7dd0e2d992f36a848ff4dc50ee6603e
+2017-10-06T17:32:23.355+0000 I CONTROL  [mongosMain] OpenSSL version: OpenSSL 1.0.0-fips 29 Mar 2010
+2017-10-06T17:32:23.355+0000 I CONTROL  [mongosMain] allocator: tcmalloc
+2017-10-06T17:32:23.355+0000 I CONTROL  [mongosMain] modules: none
+2017-10-06T17:32:23.355+0000 I CONTROL  [mongosMain] build environment:
+2017-10-06T17:32:23.355+0000 I CONTROL  [mongosMain]     distmod: amazon
+2017-10-06T17:32:23.355+0000 I CONTROL  [mongosMain]     distarch: x86_64
+2017-10-06T17:32:23.355+0000 I CONTROL  [mongosMain]     target_arch: x86_64
+2017-10-06T17:32:23.355+0000 I CONTROL  [mongosMain] options: { net: { port: 27017 }, sharding: { configDB: "configReplSet/mongodb-ny-prod-conf1.example.com:27019,mongodb-ny-prod-conf2.example.com:27019" } }
+2017-10-06T17:32:23.380+0000 I NETWORK  [mongosMain] Starting new replica set monitor for configReplSet/mongodb-ny-prod-conf1.example.com:27019,mongodb-ny-prod-conf2.example.com:27019
+2017-10-06T17:32:23.380+0000 I SHARDING [thread1] creating distributed lock ping thread for process mongodb-ny-prod-shell1.example.com:27017:1507311143:8368575692402733189 (sleeping for 30000ms)
+2017-10-06T17:32:23.381+0000 I NETWORK  [mongosMain] Successfully connected to mongodb-ny-prod-conf2.example.com:27019 (1 connections now open to mongodb-ny-prod-conf2.example.com:27019 with a 5 second timeout)
+2017-10-06T17:32:23.381+0000 I NETWORK  [shard registry reload] Successfully connected to mongodb-ny-prod-conf1.example.com:27019 (1 connections now open to mongodb-ny-prod-conf1.example.com:27019 with a 5 second timeout)
+2017-10-06T17:32:23.381+0000 I ASIO     [NetworkInterfaceASIO-ShardRegistry-0] Connecting to mongodb-ny-prod-conf2.example.com:27019
+2017-10-06T17:32:23.382+0000 I ASIO     [NetworkInterfaceASIO-ShardRegistry-0] Connecting to mongodb-ny-prod-conf1.example.com:27019
+2017-10-06T17:32:23.382+0000 I ASIO     [NetworkInterfaceASIO-ShardRegistry-0] Connecting to mongodb-ny-prod-conf1.example.com:27019
+
+Run the same command on MongoShell2
+
+[root@mongodb-ny-prod-shell2 ec2-user]# mongos --configdb configReplSet/mongodb-ny-prod-conf1.example.com:27019,mongodb-ny-prod-conf2.example.com:27019 --port 27017
+2017-10-06T17:32:23.351+0000 W SHARDING [main] Running a sharded cluster with fewer than 3 config servers should only be done for testing purposes and is not recommended for production.
+2017-10-06T17:32:23.354+0000 I CONTROL  [main]
+2017-10-06T17:32:23.354+0000 I CONTROL  [main] ** WARNING: Access control is not enabled for the database.
+2017-10-06T17:32:23.354+0000 I CONTROL  [main] **          Read and write access to data and configuration is unrestricted.
+2017-10-06T17:32:23.354+0000 I CONTROL  [main] ** WARNING: You are running this process as the root user, which is not recommended.
+2017-10-06T17:32:23.354+0000 I CONTROL  [main]
+2017-10-06T17:32:23.354+0000 I SHARDING [mongosMain] mongos version v3.4.9
+2017-10-06T17:32:23.354+0000 I CONTROL  [mongosMain] git version: 876ebee8c7dd0e2d992f36a848ff4dc50ee6603e
+2017-10-06T17:32:23.354+0000 I CONTROL  [mongosMain] OpenSSL version: OpenSSL 1.0.0-fips 29 Mar 2010
+2017-10-06T17:32:23.355+0000 I CONTROL  [mongosMain] allocator: tcmalloc
+2017-10-06T17:32:23.355+0000 I CONTROL  [mongosMain] modules: none
+2017-10-06T17:32:23.355+0000 I CONTROL  [mongosMain] build environment:
+2017-10-06T17:32:23.355+0000 I CONTROL  [mongosMain]     distmod: amazon
+2017-10-06T17:32:23.355+0000 I CONTROL  [mongosMain]     distarch: x86_64
+2017-10-06T17:32:23.355+0000 I CONTROL  [mongosMain]     target_arch: x86_64
+2017-10-06T17:32:23.355+0000 I CONTROL  [mongosMain] db version v3.4.9
+2017-10-06T17:32:23.355+0000 I CONTROL  [mongosMain] git version: 876ebee8c7dd0e2d992f36a848ff4dc50ee6603e
+2017-10-06T17:32:23.355+0000 I CONTROL  [mongosMain] OpenSSL version: OpenSSL 1.0.0-fips 29 Mar 2010
+2017-10-06T17:32:23.355+0000 I CONTROL  [mongosMain] allocator: tcmalloc
+2017-10-06T17:32:23.355+0000 I CONTROL  [mongosMain] modules: none
+2017-10-06T17:32:23.355+0000 I CONTROL  [mongosMain] build environment:
+2017-10-06T17:32:23.355+0000 I CONTROL  [mongosMain]     distmod: amazon
+2017-10-06T17:32:23.355+0000 I CONTROL  [mongosMain]     distarch: x86_64
+2017-10-06T17:32:23.355+0000 I CONTROL  [mongosMain]     target_arch: x86_64
+2017-10-06T17:32:23.355+0000 I CONTROL  [mongosMain] options: { net: { port: 27017 }, sharding: { configDB: "configReplSet/mongodb-ny-prod-conf1.example.com:27019,mongodb-ny-prod-conf2.example.com:27019" } }
+2017-10-06T17:32:23.380+0000 I NETWORK  [mongosMain] Starting new replica set monitor for configReplSet/mongodb-ny-prod-conf1.example.com:27019,mongodb-ny-prod-conf2.example.com:27019
+2017-10-06T17:32:23.380+0000 I SHARDING [thread1] creating distributed lock ping thread for process mongodb-ny-prod-shell1.example.com:27017:1507311143:8368575692402733189 (sleeping for 30000ms)
+2017-10-06T17:32:23.381+0000 I NETWORK  [mongosMain] Successfully connected to mongodb-ny-prod-conf2.example.com:27019 (1 connections now open to mongodb-ny-prod-conf2.example.com:27019 with a 5 second timeout)
+2017-10-06T17:32:23.381+0000 I NETWORK  [shard registry reload] Successfully connected to mongodb-ny-prod-conf1.example.com:27019 (1 connections now open to mongodb-ny-prod-conf1.example.com:27019 with a 5 second timeout)
+2017-10-06T17:32:23.381+0000 I ASIO     [NetworkInterfaceASIO-ShardRegistry-0] Connecting to mongodb-ny-prod-conf2.example.com:27019
+2017-10-06T17:32:23.382+0000 I ASIO     [NetworkInterfaceASIO-ShardRegistry-0] Connecting to mongodb-ny-prod-conf1.example.com:27019
+2017-10-06T17:32:23.382+0000 I ASIO     [NetworkInterfaceASIO-ShardRegistry-0] Connecting to mongodb-ny-prod-conf1.example.com:27019
+
+step - 8 
+=========
+Add the shard in Mongoshell,
+----------------------------------------
+sh.addShard( "rs0/mongodb-ny-prod-dae-rs0-rep1.example.com:27017,mongodb-ny-prod-dae-rs0-rep2.example.com:27017" )
+sh.addShard( "rs1/mongodb-ny-prod-dae-rs1-rep1.example.com:27017,mongodb-ny-prod-dae-rs1-rep2.example.com:27017" )
+sh.status()
+
+use admin
+db.runCommand("getShardMap")
+sh.enableSharding("analytics")
+------------------------------
+
+[root@mongodb-ny-prod-shell1 ec2-user]# screen -S mongo
+[detached]
+[root@mongodb-ny-prod-shell1 ec2-user]# mongo
+MongoDB shell version v3.4.9
+connecting to: mongodb://127.0.0.1:27017
+MongoDB server version: 3.4.9
+Welcome to the MongoDB shell.
+For interactive help, type "help".
+For more comprehensive documentation, see
+        http://docs.mongodb.org/
+Questions? Try the support group
+        http://groups.google.com/group/mongodb-user
+Server has startup warnings:
+2017-10-06T17:32:23.354+0000 I CONTROL  [main]
+2017-10-06T17:32:23.354+0000 I CONTROL  [main] ** WARNING: Access control is not enabled for the database.
+2017-10-06T17:32:23.354+0000 I CONTROL  [main] **          Read and write access to data and configuration is unrestricted.
+2017-10-06T17:32:23.354+0000 I CONTROL  [main] ** WARNING: You are running this process as the root user, which is not recommended.
+2017-10-06T17:32:23.354+0000 I CONTROL  [main]
+mongos>
+
+mongos> sh.addShard( "rs0/mongodb-ny-prod-dae-rs0-rep1.example.com:27017,mongodb-ny-prod-dae-rs0-rep2.example.com:27017" )
+{ "shardAdded" : "rs0", "ok" : 1 }
+mongos> sh.addShard( "rs1/mongodb-ny-prod-dae-rs1-rep1.example.com:27017,mongodb-ny-prod-dae-rs1-rep2.example.com:27017" )
+{ "shardAdded" : "rs1", "ok" : 1 }
+mongos> sh.status()
+--- Sharding Status ---
+  sharding version: {
+        "_id" : 1,
+        "minCompatibleVersion" : 5,
+        "currentVersion" : 6,
+        "clusterId" : ObjectId("59d6bd3a6f497d897b6f9bd8")
+}
+  shards:
+        {  "_id" : "rs0",  "host" : "rs0/mongodb-ny-prod-dae-rs0-rep1.example.com:27017,mongodb-ny-prod-dae-rs0-rep2.example.com:27017",  "state" : 1 }
+        {  "_id" : "rs1",  "host" : "rs1/mongodb-ny-prod-dae-rs1-rep1.example.com:27017,mongodb-ny-prod-dae-rs1-rep2.example.com:27017",  "state" : 1 }
+  active mongoses:
+        "3.4.9" : 2
+ autosplit:
+        Currently enabled: yes
+  balancer:
+        Currently enabled:  yes
+        Currently running:  no
+                Balancer lock taken at Thu Oct 05 2017 23:16:14 GMT+0000 (UTC) by ConfigServer:Balancer
+        Failed balancer rounds in last 5 attempts:  3
+        Last reported error:  Cannot accept sharding commands if not started with --shardsvr
+        Time of Reported error:  Fri Oct 06 2017 17:43:57 GMT+0000 (UTC)
+        Migration Results for the last 24 hours:
+                No recent migrations
+  databases:
+
+mongos>
+
+Run the same command as above in the 2nd mongoshell machine
+--------------------------------------------------------------
+
+[ec2-user@mongodb-ny-prod-shell2 ~]$ mongo
+MongoDB shell version v3.4.9
+connecting to: mongodb://127.0.0.1:27017
+MongoDB server version: 3.4.9
+Server has startup warnings:
+2017-10-06T17:36:12.491+0000 I CONTROL  [main]
+2017-10-06T17:36:12.491+0000 I CONTROL  [main] ** WARNING: Access control is not enabled for the database.
+2017-10-06T17:36:12.491+0000 I CONTROL  [main] **          Read and write access to data and configuration is unrestricted.
+2017-10-06T17:36:12.491+0000 I CONTROL  [main] ** WARNING: You are running this process as the root user, which is not recommended.
+2017-10-06T17:36:12.491+0000 I CONTROL  [main]
+mongos> quit()
+[ec2-user@mongodb-ny-prod-shell2 ~]$ sudo su
+[root@mongodb-ny-prod-shell2 ec2-user]# mongo
+MongoDB shell version v3.4.9
+connecting to: mongodb://127.0.0.1:27017
+MongoDB server version: 3.4.9
+Welcome to the MongoDB shell.
+For interactive help, type "help".
+For more comprehensive documentation, see
+        http://docs.mongodb.org/
+Questions? Try the support group
+        http://groups.google.com/group/mongodb-user
+Server has startup warnings:
+2017-10-06T17:36:12.491+0000 I CONTROL  [main]
+2017-10-06T17:36:12.491+0000 I CONTROL  [main] ** WARNING: Access control is not enabled for the database.
+2017-10-06T17:36:12.491+0000 I CONTROL  [main] **          Read and write access to data and configuration is unrestricted.
+2017-10-06T17:36:12.491+0000 I CONTROL  [main] ** WARNING: You are running this process as the root user, which is not recommended.
+2017-10-06T17:36:12.491+0000 I CONTROL  [main]
+mongos> sh.addShard( "rs0/mongodb-ny-prod-dae-rs0-rep1.example.com:27017,mongodb-ny-prod-dae-rs0-rep2.example.com:27017" )
+{ "shardAdded" : "rs0", "ok" : 1 }
+mongos> sh.addShard( "rs1/mongodb-ny-prod-dae-rs1-rep1.example.com:27017,mongodb-ny-prod-dae-rs1-rep2.example.com:27017" )
+{ "shardAdded" : "rs1", "ok" : 1 }
+mongos> sh.status()
+--- Sharding Status ---
+  sharding version: {
+        "_id" : 1,
+        "minCompatibleVersion" : 5,
+        "currentVersion" : 6,
+        "clusterId" : ObjectId("59d6bd3a6f497d897b6f9bd8")
+}
+  shards:
+        {  "_id" : "rs0",  "host" : "rs0/mongodb-ny-prod-dae-rs0-rep1.example.com:27017,mongodb-ny-prod-dae-rs0-rep2.example.com:27017",  "state" : 1 }
+        {  "_id" : "rs1",  "host" : "rs1/mongodb-ny-prod-dae-rs1-rep1.example.com:27017,mongodb-ny-prod-dae-rs1-rep2.example.com:27017",  "state" : 1 }
+  active mongoses:
+        "3.4.9" : 2
+ autosplit:
+        Currently enabled: yes
+  balancer:
+        Currently enabled:  yes
+        Currently running:  no
+                Balancer lock taken at Thu Oct 05 2017 23:16:14 GMT+0000 (UTC) by ConfigServer:Balancer
+        Failed balancer rounds in last 5 attempts:  5
+        Last reported error:  Cannot accept sharding commands if not started with --shardsvr
+        Time of Reported error:  Fri Oct 06 2017 17:46:27 GMT+0000 (UTC)
+        Migration Results for the last 24 hours:
+                No recent migrations
+  databases:
+
+mongos>
+
+
+Step - 9
+==========
+Enable sharding on the application database.
+
+mongos> use admin
+switched to db admin
+mongos> db.runCommand("getShardMap")
+{
+        "map" : {
+                "config" : "configReplSet/mongodb-ny-prod-conf1.example.com:27019,mongodb-ny-prod-conf2.example.com:27019",
+                "configReplSet/mongodb-ny-prod-conf1.example.com:27019,mongodb-ny-prod-conf2.example.com:27019" : "configReplSet/mongodb-ny-prod-conf1.example.com:27019,mongodb-ny-prod-conf2.example.com:27019",
+                "mongodb-ny-prod-conf1.example.com:27019" : "configReplSet/mongodb-ny-prod-conf1.example.com:27019,mongodb-ny-prod-conf2.example.com:27019",
+                "mongodb-ny-prod-conf2.example.com:27019" : "configReplSet/mongodb-ny-prod-conf1.example.com:27019,mongodb-ny-prod-conf2.example.com:27019",
+                "mongodb-ny-prod-dae-rs0-rep1.example.com:27017" : "rs0/mongodb-ny-prod-dae-rs0-rep1.example.com:27017,mongodb-ny-prod-dae-rs0-rep2.example.com:27017",
+                "mongodb-ny-prod-dae-rs0-rep2.example.com:27017" : "rs0/mongodb-ny-prod-dae-rs0-rep1.example.com:27017,mongodb-ny-prod-dae-rs0-rep2.example.com:27017",
+                "mongodb-ny-prod-dae-rs1-rep1.example.com:27017" : "rs1/mongodb-ny-prod-dae-rs1-rep1.example.com:27017,mongodb-ny-prod-dae-rs1-rep2.example.com:27017",
+                "mongodb-ny-prod-dae-rs1-rep2.example.com:27017" : "rs1/mongodb-ny-prod-dae-rs1-rep1.example.com:27017,mongodb-ny-prod-dae-rs1-rep2.example.com:27017",
+                "rs0" : "rs0/mongodb-ny-prod-dae-rs0-rep1.example.com:27017,mongodb-ny-prod-dae-rs0-rep2.example.com:27017",
+                "rs0/mongodb-ny-prod-dae-rs0-rep1.example.com:27017,mongodb-ny-prod-dae-rs0-rep2.example.com:27017" : "rs0/mongodb-ny-prod-dae-rs0-rep1.example.com:27017,mongodb-ny-prod-dae-rs0-rep2.example.com:27017",
+                "rs1" : "rs1/mongodb-ny-prod-dae-rs1-rep1.example.com:27017,mongodb-ny-prod-dae-rs1-rep2.example.com:27017",
+                "rs1/mongodb-ny-prod-dae-rs1-rep1.example.com:27017,mongodb-ny-prod-dae-rs1-rep2.example.com:27017" : "rs1/mongodb-ny-prod-dae-rs1-rep1.example.com:27017,mongodb-ny-prod-dae-rs1-rep2.example.com:27017"
+        },
+        "ok" : 1
+}
+mongos>
+
+mongos> sh.enableSharding("analytics")
+{ "ok" : 1 }
+mongos>
